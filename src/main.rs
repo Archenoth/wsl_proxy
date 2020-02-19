@@ -8,18 +8,14 @@ use std::process::{exit, Command};
 ///
 /// * `args` - The arguments to string-escape, and wrap in wslpath subshells when applicable
 fn get_args(args: std::env::Args) -> String {
-    let regex = Regex::new("^[a-zA-Z]:[/\\\\]").unwrap();
+    let windrive_regex = Regex::new(r"^[a-zA-Z]:[/\\]").unwrap();
+    let escape_regex = Regex::new(r#"([ \\'()"])"#).unwrap();
 
     args.fold(String::from(""), |acc, next| {
-        let next = next
-            .replace("\\", "\\\\")
-            .replace(" ", "\\ ")
-            .replace("\"", "\\\"")
-            .replace("(", "\\(")
-            .replace(")", "\\)");
+        let next = escape_regex.replace_all(&next, r"\$1");
 
-        if regex.is_match(&next) {
-            acc + " \"$(wslpath " + &next + ")\""
+        if windrive_regex.is_match(&next) {
+            acc + r#" "$(wslpath "# + &next + r#")""#
         } else {
             acc + " " + &next
         }
