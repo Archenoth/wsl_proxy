@@ -14,7 +14,9 @@ fn get_args(args: std::env::Args) -> String {
         let next = next
             .replace("\\", "\\\\")
             .replace(" ", "\\ ")
-            .replace("\"", "\\\"");
+            .replace("\"", "\\\"")
+            .replace("(", "\\(")
+            .replace(")", "\\)");
 
         if regex.is_match(&next) {
             acc + " \"$(wslpath " + &next + ")\""
