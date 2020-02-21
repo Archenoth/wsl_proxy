@@ -1,3 +1,6 @@
+extern crate base64;
+
+use base64::encode;
 use regex::Regex;
 use std::process::{exit, Command};
 
@@ -9,15 +12,15 @@ use std::process::{exit, Command};
 /// * `args` - The arguments to string-escape, and wrap in wslpath subshells when applicable
 fn get_args(args: std::env::Args) -> String {
     let windrive_regex = Regex::new(r"^[a-zA-Z]:[/\\]").unwrap();
-    let escape_regex = Regex::new(r#"([ \\'()"])"#).unwrap();
+    let escape_regex = Regex::new(r#"([\\'])"#).unwrap();
 
     args.fold(String::from(""), |acc, next| {
-        let next = escape_regex.replace_all(&next, r"\$1");
+        let escaped = "$'".to_owned() + &escape_regex.replace_all(&next, r"\$1") + "'";
 
         if windrive_regex.is_match(&next) {
-            acc + r#" "$(wslpath "# + &next + r#")""#
+            acc + r#" "$(wslpath "# + &escaped + r#")""#
         } else {
-            acc + " " + &next
+            acc + " " + &escaped
         }
     })
 }
@@ -47,18 +50,22 @@ fn get_program_name(program: &str) -> Result<&str, &str> {
     }
 }
 
+/// We base64 everything after escaping it because escaping things for Windows is a minor nightmare
 fn main() {
     let mut args = std::env::args();
     let program = args.nth(0).expect("Program needs to have a name!");
 
     let exit_status = match get_program_name(&program) {
-        Ok(program) => Command::new("bash")
-            .arg("-ic")
-            .arg(program.to_owned() + &get_args(args))
-            .status()
-            .expect("Failed to run program")
-            .code()
-            .expect("No exit status"),
+        Ok(program) => {
+            let command = program.to_owned() + &get_args(args);
+            Command::new("bash")
+                .arg("-ic")
+                .arg(format!("$(echo {} | base64 --decode)", encode(&command)))
+                .status()
+                .expect("Failed to run program")
+                .code()
+                .expect("No exit status")
+        }
         Err(err) => {
             eprintln!("{}", err);
             1

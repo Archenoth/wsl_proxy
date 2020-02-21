@@ -1,7 +1,7 @@
 [package]
 name = "wsl_proxy"
 description = "A WSL binary Windowsifier, so you can use WSL programs as Windows executables"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Archenoth <archenoth@gmail.com>"]
 edition = "2018"
 
@@ -9,6 +9,7 @@ edition = "2018"
 
 [dependencies]
 regex = "1"
+base64 = "0.11.0"
 
 [profile.release]
 opt-level = 'z'
